@@ -1,20 +1,35 @@
 const config = require("./config.json")
-const { Client, GatewayIntentBits, EmbedBuilder } = require("discord.js");
+const { Client, GatewayIntentBits, EmbedBuilder, GuildMember } = require("discord.js");
+const fs = require('node:fs');
+const path = require('node:path');
 const client = new Client({
-  intents: [
+  intents: [ 
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent,
+    GatewayIntentBits.GuildMembers
   ],
   partials: [
     GatewayIntentBits.channel
   ]
-});
+}); 
 
-client.on("ready", () => {
-  console.log(`logged in as ${client.user.tag}`)
-})
+//call event.js form events folder
+const eventsPath = path.join(__dirname, 'events');
+const eventFiles = fs.readdirSync(eventsPath).filter(file => file.endsWith(".js"));
 
+for (const file of eventFiles) {
+  const event = require(`./events/${file}`)
+
+  if(event.once) {
+    client.once(event.name, (...args) => event.execute(...args));
+  }
+  else {
+    client.once(event.name, (...args) => event.execute(...args));
+  }
+}
+
+//This listens to the message and replies to them.
 client.on("messageCreate", async (message) => {
   if (message.author.bot) return;
   
@@ -26,57 +41,54 @@ client.on("messageCreate", async (message) => {
 
   // CLI Starts here
   if (command === 'ping') {
-    message.channel.send("Bong!");
+    message.channel.send("pong!");
   }
 
   if (command === 'oxy') {
     message.reply('Zone');
   }
 
+  if (command === 'bye') {
+    message.reply('Pie Pie! Hap A nice dream laa! Gutumutu nyts!');
+  }
+
   if (command === 'hi') {
     const embed = new EmbedBuilder()
     .setColor('#3498DB')
     .setAuthor( {name: 'NESA', iconURL: "https://i.imgur.com/lm8s41J.png"})
-    .setTitle("title")
+    .setTitle("Hello! How r Khana Kha k jana ha!")
     .setURL("https://nepalesports.org")
     .setDescription("sanchai chau?")
-    .setImage("http://i.imgur.com/yVpymuV.png")
+    // .setImage("http://i.imgur.com/yVpymuV.png")
     .setThumbnail("http://i.imgur.com/p2qNFag.png")
-    // .addField("This is a single field title, it can hold 256 characters", "This is a field value, it can hold 1024 characters.")
-    /*
-     * Inline fields may not display as inline if the thumbnail and/or image is too big.
-     */
-    .addFields(
-      { name: "Inline fields", value: "They can have different fields with small headlines, and you can inline them.", inline: true },
-      { name: "Masked links", value: "You can put [masked links](https://discord.js.org/#/docs/main/master/class/MessageEmbed) inside of rich embeds.", inline: true },
-      { name: "Markdown", value: "You can put all the *usual* **__Markdown__** inside of them.", inline: true }
-    )
-    /*
-     * Blank field, useful to create some space.
-     */
-    // .addField("\u200b", "\u200b")
-    /*
-     * Takes a Date object, defaults to current date.
-     */
+    // .addFields(
+    //   { name: "Inline fields", value: "They can have different fields with small headlines, and you can inline them.", inline: true },
+    //   { name: "Masked links", value: "You can put [masked links](https://discord.js.org/#/docs/main/master/class/MessageEmbed) inside of rich embeds.", inline: true },
+    //   { name: "Markdown", value: "You can put all the *usual* **__Markdown__** inside of them.", inline: true }
+    // )
     .setTimestamp()
     .setFooter({text: "Namaste from nesa", iconURL: "http://i.imgur.com/w1vhFSR.png"});
-    /*
-     * With Discord now allowing messages to contain up to 10 embeds, we need to put it in an array.
-     */
+    
     message.channel.send({ embeds: [embed] });
-    /* message.channel.send({ embeds: [{
-      color: 3447003,
-      author: "NESA",
-      title: "HELLO!",
-      fields: {
-        name: "NEPAL ESPORTS ASSOCIATION",
-        value: "ok",
-        inline: true
-      },
-      description: "How R you?",
-      timestamp: new Date(),
-    }]}); */
+    
   }
 });
+
+client.on("guildMemberAdd", function(member){{
+  console.log(`"${member.user.username}" has joined the server "${member.guild.name}"`)
+    const welcomeEmbed = new EmbedBuilder()
+    .setColor('#3498DB')
+    .setTitle( `Welcome!` )
+    .setDescription(`${member.user} has joined the server! We hope you enjoy your stay!`)
+    .setThumbnail(member.user.displayAvatarURL())
+    .setTimestamp()
+  member.guild.channels.cache.find(c => c.name === "welcome").send({embeds: [welcomeEmbed]});
+  
+}});
+//${member.user.username}
+
+
+
+
   
 client.login(config.token);
